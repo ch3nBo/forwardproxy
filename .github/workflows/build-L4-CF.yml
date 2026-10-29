@@ -26,7 +26,12 @@ jobs:
         with:
           go-version: ^1.26.x
       - run: go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-      - run: ~/go/bin/xcaddy build "$CADDY_VERSION" --replace "github.com/caddyserver/caddy/v2=$GITHUB_WORKSPACE/.caddy-bbr" --with "github.com/caddyserver/forwardproxy=$GITHUB_WORKSPACE"
+      - run: |
+          ~/go/bin/xcaddy build "$CADDY_VERSION" \
+            --replace "github.com/caddyserver/caddy/v2=$GITHUB_WORKSPACE/.caddy-bbr" \
+            --with "github.com/caddyserver/forwardproxy=$GITHUB_WORKSPACE" \
+            --with "github.com/mholt/caddy-l4" \
+            --with "github.com/WeidiDeng/caddy-cloudflare-ip"
       - name: Pack naiveproxy assets
         run: |
           mkdir ${{ env.BUNDLE }}
@@ -36,8 +41,10 @@ jobs:
           echo "SHA256SUM=$(cut -d' ' -f2 sha256sum.txt)" >>$GITHUB_ENV
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.BUNDLE }}.tar.xz caddy executable sha256 ${{ env.SHA256SUM }}
-          path: sha256sum.txt
+          name: caddy-forwardproxy-asset
+          path: |
+            ${{ env.BUNDLE }}.tar.xz
+            sha256sum.txt
       - name: Upload caddy assets
         if: ${{ github.event_name == 'release' }}
         run: gh release upload "${GITHUB_REF##*/}"  ${{ env.BUNDLE }}.tar.xz --clobber
